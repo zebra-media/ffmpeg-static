@@ -7,7 +7,8 @@ jflag=
 jval=2
 rebuild=0
 download_only=0
-uname -mpi | grep -qE 'x86|i386|i686' && is_x86=1 || is_x86=0
+# uname -mpi | grep -qE 'x86|i386|i686' && is_x86=1 || is_x86=0
+is_x86=1
 
 while getopts 'j:Bd' OPTION
 do
@@ -91,12 +92,6 @@ cd $BUILD_DIR
   "https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/"
 
 download \
-  "OpenSSL_1_0_2o.tar.gz" \
-  "" \
-  "5b5c050f83feaa0c784070637fac3af4" \
-  "https://github.com/openssl/openssl/archive/"
-
-download \
   "v1.2.11.tar.gz" \
   "zlib-1.2.11.tar.gz" \
   "0095d2d2d1f3442ce1318336637b695f" \
@@ -157,11 +152,11 @@ download \
   "b0925c8266e2859311860db5d76d1671" \
   "https://github.com/webmproject/libvpx/archive"
 
-download \
-  "rtmpdump-2.3.tgz" \
-  "" \
-  "eb961f31cd55f0acf5aad1a7b900ef59" \
-  "https://rtmpdump.mplayerhq.hu/download/"
+# download \
+#   "rtmpdump-2.3.tgz" \
+#   "" \
+#   "eb961f31cd55f0acf5aad1a7b900ef59" \
+#   "https://rtmpdump.mplayerhq.hu/download/"
 
 download \
   "soxr-0.1.2-Source.tar.xz" \
@@ -193,17 +188,17 @@ download \
   "1c3099cd2656d0d80d3550ee29fc0f28" \
   "https://github.com/webmproject/libwebp/archive/"
 
-download \
-  "v1.3.6.tar.gz" \
-  "vorbis-1.3.6.tar.gz" \
-  "03e967efb961f65a313459c5d0f4cbfb" \
-  "https://github.com/xiph/vorbis/archive/"
+# download \
+#   "v1.3.6.tar.gz" \
+#   "vorbis-1.3.6.tar.gz" \
+#   "03e967efb961f65a313459c5d0f4cbfb" \
+#   "https://github.com/xiph/vorbis/archive/"
 
-download \
-  "v1.3.3.tar.gz" \
-  "ogg-1.3.3.tar.gz" \
-  "b8da1fe5ed84964834d40855ba7b93c2" \
-  "https://github.com/xiph/ogg/archive/"
+# download \
+#   "v1.3.3.tar.gz" \
+#   "ogg-1.3.3.tar.gz" \
+#   "b8da1fe5ed84964834d40855ba7b93c2" \
+#   "https://github.com/xiph/ogg/archive/"
 
 download \
   "Speex-1.2.0.tar.gz" \
@@ -217,9 +212,40 @@ download \
   "4749a5e56f31e7ccebd3f9924972220f" \
   "https://github.com/FFmpeg/FFmpeg/archive"
 
+download \
+  "bzip2-1.0.8.tar.gz" \
+  "bzip2-1.0.8.tar.gz" \
+  "26e137d6862d493f0584d999fefc1bb1" \
+  "https://github.com/libarchive/bzip2/archive/refs/tags"
+
+download \
+  "libiconv-1.17.tar.gz" \
+  "libiconv-1.17.tar.gz" \
+  "d718cd5a59438be666d1575855be72c3" \
+  "https://ftp.gnu.org/pub/gnu/libiconv"
+
+download \
+  "SDL2-2.0.22.tar.gz" \
+  "SDL2-2.0.22.tar.gz" \
+  "40aedb499cb2b6f106d909d9d97f869a" \
+  "https://www.libsdl.org/release"
+
 [ $download_only -eq 1 ] && exit 0
 
 TARGET_DIR_SED=$(echo $TARGET_DIR | awk '{gsub(/\//, "\\/"); print}')
+
+echo "*** Building libbz2 ***"
+# cd $BUILD_DIR/bzip2*
+# mkdir build && cd build
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=$TARGET_DIR -DENABLE_STATIC_LIB=ON -DENABLE_SHARED_LIB=OFF ..
+# make -j $jval
+# make install
+# cd $BUILD_DIR/bzip2*
+# meson --prefix $TARGET_DIR builddir/
+# ninja -C builddir
+# meson test -C builddir --print-errorlogs
+# ninja -C builddir install
+
 
 if [ $is_x86 -eq 1 ]; then
     echo "*** Building yasm ***"
@@ -239,24 +265,13 @@ if [ $is_x86 -eq 1 ]; then
     make install
 fi
 
-echo "*** Building OpenSSL ***"
-cd $BUILD_DIR/openssl*
-[ $rebuild -eq 1 -a -f Makefile ] && make distclean || true
-if [ "$platform" = "darwin" ]; then
-  PATH="$BIN_DIR:$PATH" ./Configure darwin64-x86_64-cc --prefix=$TARGET_DIR
-elif [ "$platform" = "linux" ]; then
-  PATH="$BIN_DIR:$PATH" ./config --prefix=$TARGET_DIR
-fi
-PATH="$BIN_DIR:$PATH" make -j $jval
-make install
-
 echo "*** Building zlib ***"
 cd $BUILD_DIR/zlib*
 [ $rebuild -eq 1 -a -f Makefile ] && make distclean || true
 if [ "$platform" = "linux" ]; then
-  [ ! -f config.status ] && PATH="$BIN_DIR:$PATH" ./configure --prefix=$TARGET_DIR
+  [ ! -f config.status ] && PATH="$BIN_DIR:$PATH" ./configure --prefix=$TARGET_DIR --static
 elif [ "$platform" = "darwin" ]; then
-  [ ! -f config.status ] && PATH="$BIN_DIR:$PATH" ./configure --prefix=$TARGET_DIR
+  [ ! -f config.status ] && PATH="$BIN_DIR:$PATH" ./configure --prefix=$TARGET_DIR --static
 fi
 PATH="$BIN_DIR:$PATH" make -j $jval
 make install
@@ -299,13 +314,13 @@ cd $BUILD_DIR/fribidi-*
 make -j $jval
 make install
 
-echo "*** Building libass ***"
-cd $BUILD_DIR/libass-*
-[ $rebuild -eq 1 -a -f Makefile ] && make distclean || true
-./autogen.sh
-./configure --prefix=$TARGET_DIR --disable-shared
-make -j $jval
-make install
+# echo "*** Building libass ***"
+# cd $BUILD_DIR/libass-*
+# [ $rebuild -eq 1 -a -f Makefile ] && make distclean || true
+# ./autogen.sh
+# ./configure --prefix=$TARGET_DIR --disable-shared
+# make -j $jval
+# make install
 
 echo "*** Building mp3lame ***"
 cd $BUILD_DIR/lame*
@@ -330,20 +345,20 @@ cd $BUILD_DIR/libvpx*
 PATH="$BIN_DIR:$PATH" make -j $jval
 make install
 
-echo "*** Building librtmp ***"
-cd $BUILD_DIR/rtmpdump-*
-cd librtmp
-[ $rebuild -eq 1 ] && make distclean || true
+# echo "*** Building librtmp ***"
+# cd $BUILD_DIR/rtmpdump-*
+# cd librtmp
+# [ $rebuild -eq 1 ] && make distclean || true
 
-# there's no configure, we have to edit Makefile directly
-if [ "$platform" = "linux" ]; then
-  sed -i "/INC=.*/d" ./Makefile # Remove INC if present from previous run.
-  sed -i "s/prefix=.*/prefix=${TARGET_DIR_SED}\nINC=-I\$(prefix)\/include/" ./Makefile
-  sed -i "s/SHARED=.*/SHARED=no/" ./Makefile
-elif [ "$platform" = "darwin" ]; then
-  sed -i "" "s/prefix=.*/prefix=${TARGET_DIR_SED}/" ./Makefile
-fi
-make install_base
+# # there's no configure, we have to edit Makefile directly
+# if [ "$platform" = "linux" ]; then
+#   sed -i "/INC=.*/d" ./Makefile # Remove INC if present from previous run.
+#   sed -i "s/prefix=.*/prefix=${TARGET_DIR_SED}\nINC=-I\$(prefix)\/include/" ./Makefile
+#   sed -i "s/SHARED=.*/SHARED=no/" ./Makefile
+# elif [ "$platform" = "darwin" ]; then
+#   sed -i "" "s/prefix=.*/prefix=${TARGET_DIR_SED}/" ./Makefile
+# fi
+# make install_base
 
 echo "*** Building libsoxr ***"
 cd $BUILD_DIR/soxr-*
@@ -387,21 +402,21 @@ cd $BUILD_DIR/libwebp*
 make -j $jval
 make install
 
-echo "*** Building libvorbis ***"
-cd $BUILD_DIR/vorbis*
-[ $rebuild -eq 1 -a -f Makefile ] && make distclean || true
-./autogen.sh
-./configure --prefix=$TARGET_DIR --disable-shared
-make -j $jval
-make install
+# echo "*** Building libvorbis ***"
+# cd $BUILD_DIR/vorbis*
+# [ $rebuild -eq 1 -a -f Makefile ] && make distclean || true
+# ./autogen.sh
+# ./configure --prefix=$TARGET_DIR --disable-shared
+# make -j $jval
+# make install
 
-echo "*** Building libogg ***"
-cd $BUILD_DIR/ogg*
-[ $rebuild -eq 1 -a -f Makefile ] && make distclean || true
-./autogen.sh
-./configure --prefix=$TARGET_DIR --disable-shared
-make -j $jval
-make install
+# echo "*** Building libogg ***"
+# cd $BUILD_DIR/ogg*
+# [ $rebuild -eq 1 -a -f Makefile ] && make distclean || true
+# ./autogen.sh
+# ./configure --prefix=$TARGET_DIR --disable-shared
+# make -j $jval
+# make install
 
 echo "*** Building libspeex ***"
 cd $BUILD_DIR/speex*
@@ -410,6 +425,40 @@ cd $BUILD_DIR/speex*
 ./configure --prefix=$TARGET_DIR --disable-shared
 make -j $jval
 make install
+
+# libiconv:
+# source code:
+# https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz.
+echo "*** Building libiconv ***"
+cd $BUILD_DIR/libiconv*
+./configure --prefix=$TARGET_DIR --enable-static --enable-shared=no
+make -j $jval
+make install
+
+
+# bzip2
+# source code:
+# https://gitlab.com/federicomenaquintero/bzip2
+# echo "*** Building libbz2 ***"
+# cd $BUILD_DIR/bzip2*
+# mkdir build && cd build
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=$TARGET_DIR -DENABLE_STATIC_LIB=ON -DENABLE_SHARED_LIB=OFF ..
+# make -j $jval
+# make install
+
+
+# SDL
+# source code:
+# https://github.com/libsdl-org/SDL
+# https://www.libsdl.org/release/SDL2-2.0.22.tar.gz
+echo "*** Building libsdl ***"
+cd $BUILD_DIR/SDL2*
+./configure --prefix=$TARGET_DIR --enable-static --enable-shared=no
+make -j $jval
+make install
+
+# liblzma
+# https://github.com/kobolabs/liblzma.git
 
 # FFMpeg
 echo "*** Building FFmpeg ***"
@@ -428,11 +477,11 @@ if [ "$platform" = "linux" ]; then
     --bindir="$BIN_DIR" \
     --enable-pic \
     --enable-ffplay \
-    --enable-fontconfig \
+    # --enable-fontconfig \
     --enable-frei0r \
     --enable-gpl \
     --enable-version3 \
-    --enable-libass \
+    # --enable-libass \
     --enable-libfribidi \
     --enable-libfdk-aac \
     --enable-libfreetype \
@@ -441,13 +490,13 @@ if [ "$platform" = "linux" ]; then
     --enable-libopencore-amrwb \
     --enable-libopenjpeg \
     --enable-libopus \
-    --enable-librtmp \
+    # --enable-librtmp \
     --enable-libsoxr \
     --enable-libspeex \
     --enable-libtheora \
     --enable-libvidstab \
     --enable-libvo-amrwbenc \
-    --enable-libvorbis \
+    # --enable-libvorbis \
     --enable-libvpx \
     --enable-libwebp \
     --enable-libx264 \
@@ -455,7 +504,7 @@ if [ "$platform" = "linux" ]; then
     --enable-libxvid \
     --enable-libzimg \
     --enable-nonfree \
-    --enable-openssl
+    --disable-securetransport
 elif [ "$platform" = "darwin" ]; then
   [ ! -f config.status ] && PATH="$BIN_DIR:$PATH" \
   PKG_CONFIG_PATH="${TARGET_DIR}/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig:/usr/local/Cellar/openssl/1.0.2o_1/lib/pkgconfig" ./configure \
@@ -468,24 +517,16 @@ elif [ "$platform" = "darwin" ]; then
     --bindir="$BIN_DIR" \
     --enable-pic \
     --enable-ffplay \
-    --enable-fontconfig \
-    --enable-frei0r \
     --enable-gpl \
     --enable-version3 \
-    --enable-libass \
     --enable-libfribidi \
     --enable-libfdk-aac \
-    --enable-libfreetype \
     --enable-libmp3lame \
-    --enable-libopencore-amrnb \
-    --enable-libopencore-amrwb \
     --enable-libopenjpeg \
     --enable-libopus \
-    --enable-librtmp \
     --enable-libsoxr \
     --enable-libspeex \
     --enable-libvidstab \
-    --enable-libvorbis \
     --enable-libvpx \
     --enable-libwebp \
     --enable-libx264 \
@@ -493,10 +534,11 @@ elif [ "$platform" = "darwin" ]; then
     --enable-libxvid \
     --enable-libzimg \
     --enable-nonfree \
-    --enable-openssl
+    --disable-securetransport
 fi
 
 PATH="$BIN_DIR:$PATH" make -j $jval
 make install
 make distclean
 hash -r
+∑
